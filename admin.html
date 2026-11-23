@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin — Central de Tutoriais</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Tela de Acesso Simples -->
+    <div id="admin-login-view" class="login-shell" hidden>
+      <div class="login-card">
+        <div class="brand-mark">
+          <span class="brand-logo-box" aria-hidden="true">◎</span>
+          <div>
+            <span class="brand-title">PAINEL <span style="color: var(--gold)">ADMIN</span></span>
+            <span class="admin-brand-sub">Central de Tutoriais da Empresa</span>
+          </div>
+        </div>
+        <h1>Acesso Administrativo</h1>
+        <p>Digite sua senha para gerenciar categorias, subcategorias, textos, fotos e vídeos.</p>
+
+        <form id="admin-login-form" style="display: flex; flex-direction: column; gap: 14px">
+          <div class="field">
+            <label for="login-password">Senha do Painel</label>
+            <input
+              id="login-password"
+              type="password"
+              placeholder="Digite a senha..."
+              autocomplete="current-password"
+              required
+            />
+            <span class="field-hint">Senha padrão inicial: <strong>admin123</strong> (você pode alterar dentro do painel).</span>
+          </div>
+          <p id="login-error" style="margin: 0; color: var(--red); font-size: 0.82rem" hidden></p>
+          <button type="submit" class="btn btn-gold" style="width: 100%; padding: 11px">
+            Entrar no Painel
+          </button>
+          <a href="./index.html" class="btn btn-ghost" style="width: 100%">
+            ← Voltar para o Site Principal
+          </a>
+        </form>
+      </div>
+    </div>
+
+    <!-- Aplicação Principal do Painel Admin -->
+    <div id="admin-app-view" hidden>
+      <header class="admin-header">
+        <div class="container admin-header-inner">
+          <div class="admin-brand-wrap">
+            <div class="brand-mark">
+              <span class="brand-logo-box" aria-hidden="true">◎</span>
+              <div>
+                <span class="brand-title">
+                  <span id="admin-brand-label">MONITOR</span>
+                  <span style="color: var(--gold)">ADMIN</span>
+                </span>
+                <span class="admin-brand-sub">Categorias, Subcategorias, Fotos & Vídeos</span>
+              </div>
+            </div>
+            <span id="storage-status-pill" class="status-pill">
+              <span class="status-dot"></span>
+              <span id="storage-status-text">Carregando...</span>
+            </span>
+          </div>
+
+          <div class="admin-header-actions">
+            <button type="button" id="btn-open-supabase" class="btn btn-sm">
+              ⚡ Conexão Supabase
+            </button>
+            <button type="button" id="btn-open-settings" class="btn btn-sm">
+              ⚙ Site & Backup
+            </button>
+            <a href="./index.html" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+              👁 Ver Site Público
+            </a>
+            <button type="button" id="btn-logout" class="btn btn-danger btn-sm">Sair</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="container admin-main">
+        <!-- Hero Banner -->
+        <section class="admin-hero-banner">
+          <div>
+            <h1>Categorias de Tutoriais</h1>
+            <p>
+              Crie, edite e ordene categorias e subcategorias. Em cada uma delas você pode colocar
+              textos explicativos, fotos e vídeos visíveis imediatamente no site principal.
+            </p>
+          </div>
+          <button type="button" id="btn-new-category-hero" class="btn btn-gold">
+            + Nova Categoria
+          </button>
+        </section>
+
+        <!-- Cards de Métricas -->
+        <section class="stats-grid" aria-label="Resumo do painel">
+          <div class="stat-card">
+            <div class="stat-icon">📁</div>
+            <div>
+              <div class="stat-value" id="stat-categories">0</div>
+              <div class="stat-label">Categorias Ativas</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div>
+              <div class="stat-value" id="stat-subcategories">0</div>
+              <div class="stat-label">Subcategorias / Tutoriais</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div>
+              <div class="stat-value is-green" id="stat-storage-title">Local</div>
+              <div class="stat-label" id="stat-media-summary">0 fotos • 0 vídeos</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Barra de Busca + Ação -->
+        <div class="admin-toolbar">
+          <input
+            id="admin-filter-input"
+            type="search"
+            class="admin-search"
+            placeholder="🔍 Filtrar categorias ou subcategorias..."
+          />
+          <button type="button" id="btn-new-category-toolbar" class="btn">
+            + Adicionar Categoria
+          </button>
+        </div>
+
+        <!-- Lista Expansível de Categorias e Subcategorias -->
+        <section id="admin-categories-list" class="admin-categories-list"></section>
+      </main>
+    </div>
+
+    <!-- Modal Unificado: Criar/Editar Categoria ou Subcategoria (Texto + Fotos + Vídeos) -->
+    <div id="editor-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h2 id="editor-modal-title">Nova Categoria</h2>
+          <button type="button" class="btn btn-sm btn-ghost" data-close-modal="editor-modal">
+            ✕ Fechar
+          </button>
+        </div>
+
+        <form id="editor-form" style="display: contents">
+          <div class="modal-body">
+            <input type="hidden" id="editor-kind" value="category" />
+            <input type="hidden" id="editor-id" value="" />
+
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="editor-title" id="editor-title-label">Nome da Categoria *</label>
+                <input
+                  id="editor-title"
+                  type="text"
+                  required
+                  placeholder="Ex.: Primeiros Passos"
+                />
+              </div>
+
+              <div class="field" id="editor-parent-wrap" hidden>
+                <label for="editor-parent-cat">Categoria Principal *</label>
+                <select id="editor-parent-cat"></select>
+              </div>
+
+              <div class="field" id="editor-order-wrap">
+                <label for="editor-order">Ordem de Exibição</label>
+                <input id="editor-order" type="number" min="1" value="1" />
+              </div>
+            </div>
+
+            <div class="field" id="editor-icon-wrap">
+              <label>Ícone da Categoria</label>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                <input
+                  id="editor-icon"
+                  type="text"
+                  value="📁"
+                  style="width: 64px; text-align: center; font-size: 1.2rem"
+                />
+                <div id="icon-picker-list" class="icon-picker"></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="editor-summary">Resumo Curto (aparece nos cartões)</label>
+              <input
+                id="editor-summary"
+                type="text"
+                placeholder="Explique em uma frase o que o cliente vai aprender aqui..."
+              />
+            </div>
+
+            <div class="field">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap">
+                <label for="editor-content">Texto Explicativo</label>
+                <div class="format-toolbar">
+                  <button type="button" class="btn btn-sm" data-insert-snippet="\n## Novo Passo\n">
+                    + Título
+                  </button>
+                  <button type="button" class="btn btn-sm" data-insert-snippet="**texto em destaque**">
+                    + Negrito
+                  </button>
+                  <button type="button" class="btn btn-sm" data-insert-snippet="\n1. Primeiro passo\n2. Segundo passo\n">
+                    + Passos
+                  </button>
+                  <button type="button" class="btn btn-sm" data-insert-snippet="\n> Dica importante: ">
+                    + Dica
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="editor-content"
+                rows="6"
+                placeholder="Escreva o passo a passo completo para seu cliente..."
+              ></textarea>
+            </div>
+
+            <!-- Bloco de Fotos Explicativas -->
+            <div class="media-editor-box">
+              <div class="media-editor-head">
+                <h3>🖼️ Fotos Explicativas</h3>
+                <label class="btn btn-gold btn-sm" style="cursor: pointer">
+                  📤 Enviar Foto(s) do PC
+                  <input
+                    id="editor-photo-upload"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                  />
+                </label>
+              </div>
+
+              <div class="inline-add-row">
+                <input
+                  id="editor-photo-url"
+                  type="url"
+                  placeholder="Ou cole o link (URL) de uma imagem..."
+                />
+                <input
+                  id="editor-photo-caption"
+                  type="text"
+                  placeholder="Legenda opcional da foto"
+                />
+                <button type="button" id="btn-add-photo-url" class="btn btn-sm">
+                  + Adicionar Foto
+                </button>
+              </div>
+
+              <div id="editor-photos-list" class="media-items-list"></div>
+            </div>
+
+            <!-- Bloco de Vídeos Explicativos -->
+            <div class="media-editor-box">
+              <div class="media-editor-head">
+                <h3>🎥 Vídeos Explicativos</h3>
+                <label class="btn btn-gold btn-sm" style="cursor: pointer">
+                  📤 Enviar Vídeo (MP4/WebM)
+                  <input
+                    id="editor-video-upload"
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg"
+                    hidden
+                  />
+                </label>
+              </div>
+
+              <div class="inline-add-row">
+                <input
+                  id="editor-video-url"
+                  type="url"
+                  placeholder="Cole link do YouTube, Vimeo, Loom ou MP4..."
+                />
+                <input
+                  id="editor-video-title"
+                  type="text"
+                  placeholder="Título do vídeo (ex.: Como fazer login)"
+                />
+                <button type="button" id="btn-add-video-url" class="btn btn-sm">
+                  + Adicionar Vídeo
+                </button>
+              </div>
+
+              <div id="editor-videos-list" class="media-items-list"></div>
+            </div>
+
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 0.86rem; cursor: pointer">
+              <input id="editor-published" type="checkbox" checked style="width: 18px; height: 18px; accent-color: var(--gold)" />
+              Visível imediatamente no site principal
+            </label>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn" data-close-modal="editor-modal">Cancelar</button>
+            <button type="submit" id="btn-save-editor" class="btn btn-gold">
+              💾 Salvar e Publicar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Conexão Supabase -->
+    <div id="supabase-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true">
+      <div class="modal-panel modal-sm">
+        <div class="modal-header">
+          <h2>⚡ Conexão Supabase Cloud</h2>
+          <button type="button" class="btn btn-sm btn-ghost" data-close-modal="supabase-modal">
+            ✕ Fechar
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p style="margin: 0; font-size: 0.86rem; color: var(--text-secondary); line-height: 1.55">
+            Conecte seu projeto Supabase para salvar categorias, subcategorias, fotos e vídeos na
+            nuvem. Antes de testar, execute o script SQL abaixo no <strong>SQL Editor</strong> do Supabase.
+          </p>
+
+          <div class="field">
+            <label for="sb-url">Supabase Project URL</label>
+            <input id="sb-url" type="url" placeholder="https://seuprojeto.supabase.co" />
+          </div>
+
+          <div class="field">
+            <label for="sb-key">Publishable / Anon Key</label>
+            <input id="sb-key" type="text" placeholder="sb_publishable_... ou eyJ..." />
+          </div>
+
+          <p id="sb-feedback" style="margin: 0; font-size: 0.82rem" hidden></p>
+
+          <div class="media-editor-box">
+            <div class="media-editor-head">
+              <h3>📄 Script SQL do Banco + Storage</h3>
+              <button type="button" id="btn-copy-sql" class="btn btn-sm">📋 Copiar SQL</button>
+            </div>
+            <pre id="sb-sql-preview" class="code-block">Carregando schema.sql...</pre>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap">
+          <button type="button" id="btn-disconnect-sb" class="btn btn-danger btn-sm">
+            Usar Modo Local
+          </button>
+          <div style="display: flex; gap: 8px">
+            <button type="button" class="btn" data-close-modal="supabase-modal">Fechar</button>
+            <button type="button" id="btn-connect-sb" class="btn btn-gold">
+              ⚡ Testar e Conectar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Configurações do Site & Backup -->
+    <div id="settings-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true">
+      <div class="modal-panel modal-sm">
+        <div class="modal-header">
+          <h2>⚙ Configurações do Site & Backup</h2>
+          <button type="button" class="btn btn-sm btn-ghost" data-close-modal="settings-modal">
+            ✕ Fechar
+          </button>
+        </div>
+
+        <form id="settings-form" style="display: contents">
+          <div class="modal-body">
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="cfg-brand-name">Nome da Empresa</label>
+                <input id="cfg-brand-name" type="text" required />
+              </div>
+              <div class="field">
+                <label for="cfg-brand-badge">Selo / Sigla</label>
+                <input id="cfg-brand-badge" type="text" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="cfg-hero-title">Título Principal da Capa</label>
+              <input id="cfg-hero-title" type="text" required />
+            </div>
+
+            <div class="field">
+              <label for="cfg-hero-subtitle">Subtítulo da Capa</label>
+              <textarea id="cfg-hero-subtitle" rows="3"></textarea>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="cfg-wa-label">Texto Botão WhatsApp</label>
+                <input id="cfg-wa-label" type="text" />
+              </div>
+              <div class="field">
+                <label for="cfg-wa-url">Link do WhatsApp</label>
+                <input id="cfg-wa-url" type="url" placeholder="https://wa.me/55..." />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="cfg-admin-pass">Senha do Painel Admin</label>
+              <input id="cfg-admin-pass" type="text" required />
+            </div>
+
+            <div class="media-editor-box">
+              <div class="media-editor-head">
+                <h3>💾 Backup dos Tutoriais (JSON)</h3>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                <button type="button" id="btn-export-json" class="btn btn-sm">
+                  ⬇ Exportar Backup JSON
+                </button>
+                <label class="btn btn-sm" style="cursor: pointer">
+                  ⬆ Importar Backup JSON
+                  <input id="input-import-json" type="file" accept="application/json" hidden />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn" data-close-modal="settings-modal">Cancelar</button>
+            <button type="submit" class="btn btn-gold">Salvar Configurações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="admin-toast" class="toast" hidden role="status"></div>
+
+    <script type="module" src="./js/admin.js"></script>
+  </body>
+</html>
+

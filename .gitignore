@@ -1,0 +1,11 @@
+# Dependências e caches
+node_modules/
+.DS_Store
+*.log
+*.tmp
+
+# Uploads locais de teste (mantém as pastas no repositório)
+uploads/photos/*
+!uploads/photos/.gitkeep
+uploads/videos/*
+!uploads/videos/.gitkeep
