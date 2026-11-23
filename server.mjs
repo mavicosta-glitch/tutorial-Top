@@ -247,12 +247,19 @@ export function createTutorialsServer() {
   });
 }
 
+// Exporta handler para compatibilidade serverless caso Vercel invoque
+const defaultApp = createTutorialsServer();
+export default function handler(req, res) {
+  defaultApp.emit("request", req, res);
+}
+
 // Inicia automaticamente quando executado diretamente pela linha de comando
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const server = createTutorialsServer();
-  server.listen(PORT, "127.0.0.1", () => {
-    console.log(`Central de Tutoriais rodando em: http://127.0.0.1:${PORT}`);
-    console.log(`Painel Administrativo:          http://127.0.0.1:${PORT}/admin`);
+  const host = process.env.HOST || "0.0.0.0";
+  server.listen(PORT, host, () => {
+    console.log(`Central de Tutoriais rodando em: http://${host === "0.0.0.0" ? "localhost" : host}:${PORT}`);
+    console.log(`Painel Administrativo:          http://${host === "0.0.0.0" ? "localhost" : host}:${PORT}/admin`);
   });
 }
 
