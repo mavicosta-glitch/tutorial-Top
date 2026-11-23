@@ -17,7 +17,7 @@ O projeto foi construído em JavaScript Moderno nativo (ES Modules), dispensando
 
 ```bash
 # Iniciar o servidor com suporte a streaming de vídeo e upload
-node scripts/server.mjs
+node server.mjs
 ```
 
 Ou usando npm:

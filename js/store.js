@@ -174,7 +174,12 @@ async function detectLocalServer() {
   }
   try {
     const res = await fetch("/api/health", { cache: "no-store" });
-    serverAvailableCache = res.ok;
+    if (res.ok) {
+      const info = await res.json().catch(() => null);
+      serverAvailableCache = info?.provider === "local-server";
+    } else {
+      serverAvailableCache = false;
+    }
   } catch {
     serverAvailableCache = false;
   }
