@@ -9,8 +9,14 @@ import { DEFAULT_STATE } from "./default-data.js";
 import { generateId, slugify } from "./media-utils.js";
 
 const SUPABASE_CFG_KEY = "central_tutoriais_supabase_cfg_v1";
+const SUPABASE_MODE_KEY = "central_tutoriais_supabase_mode_v1";
 const LOCAL_STATE_KEY = "central_tutoriais_state_v1";
 const ADMIN_AUTH_KEY = "central_tutoriais_admin_session_v1";
+
+export const DEFAULT_SUPABASE_CONFIG = {
+  url: "https://qroemyfnpproahzfsuxt.supabase.co",
+  key: "sb_publishable_bQrQ6hdRqglxazx5vinRLQ_DsThDbgn",
+};
 
 function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
@@ -18,24 +24,30 @@ function clone(obj) {
 
 export function getSupabaseConfig() {
   try {
+    // Se o usuário clicou explicitamente em "Usar Modo Local"
+    if (localStorage.getItem(SUPABASE_MODE_KEY) === "local") {
+      return null;
+    }
     const raw = localStorage.getItem(SUPABASE_CFG_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed?.url && parsed?.key) {
-      return {
-        url: String(parsed.url).trim().replace(/\/+$/, ""),
-        key: String(parsed.key).trim(),
-      };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.url && parsed?.key) {
+        return {
+          url: String(parsed.url).trim().replace(/\/+$/, ""),
+          key: String(parsed.key).trim(),
+        };
+      }
     }
   } catch {
     // ignora
   }
-  return null;
+  return DEFAULT_SUPABASE_CONFIG;
 }
 
 export function saveSupabaseConfig(url, key) {
   const cleanUrl = String(url || "").trim().replace(/\/+$/, "");
   const cleanKey = String(key || "").trim();
+  localStorage.removeItem(SUPABASE_MODE_KEY);
   if (!cleanUrl || !cleanKey) {
     localStorage.removeItem(SUPABASE_CFG_KEY);
     return null;
@@ -47,6 +59,7 @@ export function saveSupabaseConfig(url, key) {
 
 export function clearSupabaseConfig() {
   localStorage.removeItem(SUPABASE_CFG_KEY);
+  localStorage.setItem(SUPABASE_MODE_KEY, "local");
 }
 
 export function isAdminLoggedIn() {

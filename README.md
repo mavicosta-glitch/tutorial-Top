@@ -32,15 +32,17 @@ npm start
 
 ---
 
-## ⚡ Conectando ao Supabase Cloud
+## ⚡ Conexão Supabase Cloud (Configurado por Padrão)
 
-Para ter persistência em nuvem multiusuário:
+O projeto já vem pré-configurado para conectar ao projeto:
+- **Project URL:** `https://qroemyfnpproahzfsuxt.supabase.co`
+- **Publishable Key:** `sb_publishable_bQrQ6hdRqglxazx5vinRLQ_DsThDbgn`
 
-1. Acesse o **SQL Editor** do seu painel no Supabase.
-2. Execute o script contido em [supabase/schema.sql](supabase/schema.sql) (ele cria as tabelas `tutorial_settings`, `tutorial_categories`, `tutorial_subcategories` e o bucket `tutorial-media`).
-3. No Painel Admin, clique no botão **⚡ Conexão Supabase**.
-4. Insira a sua **Project URL** e a chave **Publishable (anon) Key**.
-5. Clique em **Testar e Conectar**. Os dados serão sincronizados em tempo real.
+### Como inicializar o banco de dados no Supabase:
+1. Acesse o **SQL Editor** do projeto: [https://supabase.com/dashboard/project/qroemyfnpproahzfsuxt/sql](https://supabase.com/dashboard/project/qroemyfnpproahzfsuxt/sql)
+2. Cole e execute o script contido em [supabase/schema.sql](supabase/schema.sql).
+   - Ele cria automaticamente `tutorial_settings`, `tutorial_categories`, `tutorial_subcategories`, as políticas RLS, o bucket de mídia `tutorial-media` e já insere todas as categorias e tutoriais padrão do TOP APP!
+3. Abra o **Painel Admin** (`admin.html`) e os dados já estarão sincronizados na nuvem!
 
 ---
 
