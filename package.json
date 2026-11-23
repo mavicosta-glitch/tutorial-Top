@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "node server.mjs",
     "serve": "node server.mjs",
-    "build": "node -e \"console.log('Site estático pronto para Vercel')\"",
     "test": "node --test tests/*.test.mjs"
   }
 }

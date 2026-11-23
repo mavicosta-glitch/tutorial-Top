@@ -1,0 +1,6 @@
+server.mjs
+tests/
+data/
+uploads/
+*.log
+*.tmp
