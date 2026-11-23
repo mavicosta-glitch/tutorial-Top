@@ -1,11 +1,6 @@
 /**
  * Servidor local leve (zero dependências externas) para a Central de Tutoriais.
- * Uso: node central-tutoriais/server.mjs
- *
- * Recursos:
- * - Serve o site principal (/) e o painel admin (/admin ou /admin.html)
- * - Salva categorias, subcategorias, textos, fotos e vídeos em central-tutoriais/data/tutorials.json
- * - Recebe uploads reais de imagens (JPG/PNG/WebP/GIF) e vídeos (MP4/WebM/Ogg) em central-tutoriais/uploads/
+ * Uso: npm run dev  OU  node scripts/server.mjs
  */
 
 import http from "node:http";
@@ -13,16 +8,17 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_STATE } from "./js/default-data.js";
+import { DEFAULT_STATE } from "../js/default-data.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, "..");
 
 const PORT = Number(process.env.TUTORIALS_PORT || process.env.PORT || 4100);
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.join(ROOT_DIR, "data");
 const DATA_FILE = path.join(DATA_DIR, "tutorials.json");
-const UPLOADS_DIR = path.join(__dirname, "uploads");
-const SCHEMA_FILE = path.join(__dirname, "supabase", "schema.sql");
+const UPLOADS_DIR = path.join(ROOT_DIR, "uploads");
+const SCHEMA_FILE = path.join(ROOT_DIR, "supabase", "schema.sql");
 
 const MAX_UPLOAD_BYTES = 55 * 1024 * 1024; // 55 MB
 
@@ -128,45 +124,49 @@ export function createTutorialsServer() {
         return sendJson(res, 200, {
           status: "ok",
           provider: "local-server",
-          categories: state.categories?.length ?? 0,
-          subcategories: state.subcategories?.length ?? 0,
+          categoriesCount: state.categories?.length || 0,
+          subcategoriesCount: state.subcategories?.length || 0,
         });
       }
 
-      // SQL Schema para copiar direto no Painel Admin
+      // Schema SQL
       if (pathname === "/api/schema" && req.method === "GET") {
-        const sql = fs.existsSync(SCHEMA_FILE)
-          ? fs.readFileSync(SCHEMA_FILE, "utf-8")
-          : "";
-        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-        return res.end(sql);
-      }
-
-      // Leitura do estado completo
-      if (pathname === "/api/state" && req.method === "GET") {
-        return sendJson(res, 200, readJsonState());
-      }
-
-      // Gravação do estado completo
-      if (pathname === "/api/state" && (req.method === "PUT" || req.method === "POST")) {
-        const raw = await readRequestBody(req, 15 * 1024 * 1024);
-        const parsed = JSON.parse(raw.toString("utf-8"));
-        if (!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.subcategories)) {
-          return sendJson(res, 400, { error: "Payload de estado inválido." });
+        if (fs.existsSync(SCHEMA_FILE)) {
+          const sql = fs.readFileSync(SCHEMA_FILE, "utf-8");
+          res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+          return res.end(sql);
         }
-        writeJsonState(parsed);
-        return sendJson(res, 200, { ok: true });
+        return sendJson(res, 404, { error: "schema.sql não encontrado." });
       }
 
-      // Upload binário de fotos e vídeos
+      // Estado JSON local
+      if (pathname === "/api/state") {
+        if (req.method === "GET") {
+          return sendJson(res, 200, readJsonState());
+        }
+        if (req.method === "PUT" || req.method === "POST") {
+          const raw = await readRequestBody(req, 10 * 1024 * 1024);
+          try {
+            const nextState = JSON.parse(raw.toString("utf-8"));
+            writeJsonState(nextState);
+            return sendJson(res, 200, { ok: true, state: nextState });
+          } catch (parseErr) {
+            return sendJson(res, 400, { error: "JSON inválido: " + parseErr.message });
+          }
+        }
+      }
+
+      // Upload local de foto ou vídeo
       if (pathname === "/api/upload" && req.method === "POST") {
-        const originalName = reqUrl.searchParams.get("name") || "arquivo.png";
-        const kind = reqUrl.searchParams.get("kind") === "videos" ? "videos" : "photos";
-        let ext = path.extname(originalName).toLowerCase();
-        if (!ALLOWED_UPLOAD_EXT.has(ext)) {
-          const ct = String(req.headers["content-type"] || "").toLowerCase();
+        const kind = reqUrl.searchParams.get("kind") === "video" ? "videos" : "photos";
+        const ct = String(req.headers["content-type"] || "").toLowerCase();
+        let ext = ".jpg";
+        const urlExt = path.extname(reqUrl.searchParams.get("filename") || "").toLowerCase();
+
+        if (ALLOWED_UPLOAD_EXT.has(urlExt)) {
+          ext = urlExt;
+        } else {
           if (ct.includes("png")) ext = ".png";
-          else if (ct.includes("jpeg") || ct.includes("jpg")) ext = ".jpg";
           else if (ct.includes("webp")) ext = ".webp";
           else if (ct.includes("gif")) ext = ".gif";
           else if (ct.includes("mp4")) ext = ".mp4";
@@ -196,11 +196,11 @@ export function createTutorialsServer() {
       // Rotas amigáveis de página
       let filePath = null;
       if (pathname === "/" || pathname === "/index.html") {
-        filePath = path.join(__dirname, "index.html");
+        filePath = path.join(ROOT_DIR, "index.html");
       } else if (pathname === "/admin" || pathname === "/admin/" || pathname === "/admin.html") {
-        filePath = path.join(__dirname, "admin.html");
+        filePath = path.join(ROOT_DIR, "admin.html");
       } else {
-        filePath = safeResolve(__dirname, pathname);
+        filePath = safeResolve(ROOT_DIR, pathname);
       }
 
       if (!filePath || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
@@ -247,12 +247,6 @@ export function createTutorialsServer() {
   });
 }
 
-// Exporta handler para compatibilidade serverless caso Vercel invoque
-const defaultApp = createTutorialsServer();
-export default function handler(req, res) {
-  defaultApp.emit("request", req, res);
-}
-
 // Inicia automaticamente quando executado diretamente pela linha de comando
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const server = createTutorialsServer();
@@ -262,4 +256,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
     console.log(`Painel Administrativo:          http://${host === "0.0.0.0" ? "localhost" : host}:${PORT}/admin`);
   });
 }
-
