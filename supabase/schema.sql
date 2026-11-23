@@ -111,8 +111,13 @@ CREATE TRIGGER trg_tutorial_subcategories_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_tutorial_updated_at();
 
 -- ----------------------------------------------------------------------------
--- 5. RLS (Row Level Security) — Permissões de Leitura e Edição
+-- 5. Permissões (GRANT) + RLS (Row Level Security)
 -- ----------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tutorial_settings TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tutorial_categories TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tutorial_subcategories TO anon, authenticated;
+
 ALTER TABLE public.tutorial_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tutorial_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tutorial_subcategories ENABLE ROW LEVEL SECURITY;

@@ -236,6 +236,15 @@ async function handleRequest(req, res) {
       return res.end(content);
     }
 
+    // Fallback em memória para /js/default-data.js (quando o bundler da Vercel incorpora o módulo)
+    if (pathname === "/js/default-data.js") {
+      res.writeHead(200, {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      });
+      return res.end(`export const DEFAULT_STATE = ${JSON.stringify(DEFAULT_STATE, null, 2)};\n`);
+    }
+
     // 2) Fallback para uploads locais e demais arquivos estáticos
     let filePath = null;
     if (pathname.startsWith("/uploads/")) {
