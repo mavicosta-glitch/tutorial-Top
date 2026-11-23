@@ -9,3 +9,4 @@ uploads/photos/*
 !uploads/photos/.gitkeep
 uploads/videos/*
 !uploads/videos/.gitkeep
+
